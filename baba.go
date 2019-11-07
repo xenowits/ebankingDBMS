@@ -6,8 +6,9 @@ import (
   "net/http"
   _ "github.com/go-sql-driver/mysql"
   "fmt"
-  // "crypto/sha256"
+  "golang.org/x/crypto/bcrypt"
   "log"
+  // "os"
 )
 
 type customer struct {
@@ -29,9 +30,7 @@ func main() {
 
   r.LoadHTMLGlob("templates/*")
   // r.LoadHTMLFiles("pages/index.html")
-  r.GET("/credit", func(c *gin.Context) {
-    c.JSON(http.StatusOK, gin.H {"message" : "piong"})
-  })
+
   r.GET("/", func(c *gin.Context) {
     c.HTML(http.StatusOK, "index.tmpl", gin.H {
       "title" : "Ebanking",
@@ -50,27 +49,64 @@ func main() {
       // stmt, _:= db.Prepare("SELECT * FROM customers")
       // p, err := stmt.Exec()
 
-      var (
-        Idq int
-        usernameq string
-        passwordq string
-        roleq string
-        availBalanceq int
-      )
-
-      q := "SELECT * FROM customers"
-      row := db.QueryRow(q)
-
-      if err := row.Scan(&Idq, &usernameq, &passwordq, &roleq, &availBalanceq); err != nil {
+      stmt, err := db.Prepare("INSERT INTO customers (username, password, role, availBalance) VALUES (?, ?, ?, ?)")
+      if err != nil {
         log.Fatal(err)
       }
 
-      log.Print(Idq, usernameq, passwordq, roleq, availBalanceq)
+      hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), 5)
+      if err != nil {
+        log.Fatal(err)
+      }
 
-      c.JSON(http.StatusOK, gin.H{
-        "badhiya" : "ha sb badhiya",
-      })
+      _, err = stmt.Exec(username, string(hashedPassword), role, availBalance)
+      if err != nil {
+        log.Fatal(err)
+      }
+
+      c.Redirect(http.StatusMovedPermanently, "/")
+
+      // c.HTML(http.StatusOK, "credit.html", gin.H{
+      //   // "badhiya" : "ha sb badhiya"
+      // })
   })
 
-  r.Run()
+  r.POST("/signin", func(c *gin.Context) {
+
+    username := c.PostForm("username")
+    password := c.PostForm("password")
+
+    var (
+      Idq int
+      usernameq string
+      passwordq string
+      roleq string
+      availBalanceq int
+    )
+
+    q := "SELECT * FROM customers WHERE username=?"
+    row := db.QueryRow(q,username)
+
+    if err := row.Scan(&Idq, &usernameq, &passwordq, &roleq, &availBalanceq); err != nil {
+      log.Fatal(err)
+    }
+
+    log.Print(Idq, usernameq, passwordq, password, roleq, availBalanceq)
+
+
+    err := bcrypt.CompareHashAndPassword([]byte(password), []byte(passwordq))
+    if err != nil {
+      fmt.Println("passwords match")
+      c.Redirect(http.StatusMovedPermanently, "https://www.google.com/")
+    } else {
+      fmt.Println("no matching bosses")
+      c.JSON(http.StatusOK, gin.H {
+        "health" : "nice",
+      })
+      //c.Redirect(200, "https://www.netflix.com/in/")
+    }
+
+  })
+
+  r.Run(":3000")
 }
