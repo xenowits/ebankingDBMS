@@ -3,11 +3,12 @@
 
 <head>
   <meta charset="UTF-8">
-  <title>Pragyan Hackathon'19</title>
+  <title>EbankingDBMS</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="author" content="abhishek">
   <link rel="stylesheet" type="text/css" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css">
   <link rel='stylesheet prefetch' href='https://fonts.googleapis.com/css?family=Open+Sans:600'>
+  <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
   <style type="text/css">
     body{
   margin:0;
@@ -25,7 +26,7 @@ a{color:inherit;text-decoration:none}
   width:100%;
   margin:auto;
   max-width:525px;
-  min-height:1300px;
+  min-height:800px;
   position:relative;
   background:rgba(40,57,101,.9);
   /*background:url(https://raw.githubusercontent.com/khadkamhn/day-01-login-form/master/img/bg.jpg) no-repeat center;*/
@@ -75,7 +76,7 @@ a{color:inherit;text-decoration:none}
   border-color:#1161ee;
 }
 .login-form{
-  min-height:345px;
+  min-height:105px;
   position:relative;
   -webkit-perspective:1000px;
           perspective:1000px;
@@ -191,14 +192,14 @@ a{color:inherit;text-decoration:none}
 		<input id="tab-1" type="radio" name="tab" class="sign-in" checked><label for="tab-1" class="tab">Sign In</label>
 		<input id="tab-2" type="radio" name="tab" class="sign-up"><label for="tab-2" class="tab">Sign Up</label>
 		<div class="login-form">
-			<form action="/signin/customer" method="post"><div class="sign-in-htm">
-        <div class="group">
+			<form action="/signin" method="post"><div class="sign-in-htm">
+        <!-- <div class="group">
           <label for="role" class="label">Role</label>
           <input id="role" type="text" class="input" name="role" value="customer" readonly>
-        </div>
+        </div> -->
 				<div class="group">
-					<label for="name" class="label">Name</label>
-					<input id="username" type="text" class="input" name="name" required>
+					<label for="username" class="label">Username</label>
+					<input id="username" type="text" class="input" name="username" required>
 				</div>
 				<div class="group">
 					<label for="password" class="label">Password</label>
@@ -220,13 +221,13 @@ a{color:inherit;text-decoration:none}
 				</div> -->
         <div class="group">
           <label for="role" class="label">Role</label>
-          <input id="role" type="text" class="input" name="role" value="customer" readonly>
+          <input id="role" type="text" class="input" name="role" value="admin/customer">
         </div>
         <div class="group">
-          <label for="name" class="label">Name</label>
-          <input id="name" type="text" class="input" name="name" required>
+          <label for="username" class="label">Username</label>
+          <input id="username" type="text" class="input" name="username" required>
         </div>
-				<div class="group">
+				<!-- <div class="group">
 					<label for="aadhar" class="label">Aadhar</label>
 					<input id="aadhar" type="number" class="input" name="aadhar" required>
                 </div>
@@ -250,16 +251,16 @@ a{color:inherit;text-decoration:none}
                 <div class="group">
                     <label for="annualincome" class="label">AnnualIncome</label>
                     <input id="annualincome" type="text" class="input" name="annualincome" required>
-                </div>
+                </div> -->
         <div class="group">
           <label for="password" class="label">Password</label>
           <input id="password" type="password" class="input" data-type="password" name="password" required>
         </div>
         <div class="group">
-          <label for="pincode" class="label">Pincode</label>
-          <input id="pincode" class="input" name="pincode" type="number" required>
-        </div><!--
-        <div class="group">
+          <label for="availBalance" class="label">availBalance</label>
+          <input id="availBalance" class="input" name="availBalance" type="number" required>
+        </div>
+        <!-- <div class="group">
           <input class="btn btn-outline-secondary" type="submit" value="Freelancer"  data-toggle="button" aria-pressed="false" >
           <input class="btn btn-outline-secondary" type="submit" value="Company"  data-toggle="button" aria-pressed="false" >
         </div> -->
