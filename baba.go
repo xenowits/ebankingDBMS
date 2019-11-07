@@ -37,6 +37,23 @@ func main() {
     })
   })
 
+  r.GET("/credit", func(c *gin.Context) {
+
+      cookie, err := c.Cookie("isLoggedIn")
+
+      if err != nil {
+
+        c.Redirect(http.StatusMovedPermanently, "/")
+
+      } else if cookie == "true" {
+        name, _ := c.Cookie("username")
+        c.HTML(http.StatusOK, "credit.tmpl", gin.H {
+          "name" : name,
+        })
+      }
+
+  })
+
   r.POST("/signup", func(c *gin.Context) {
 
       role := c.PostForm("role")
@@ -45,9 +62,6 @@ func main() {
       availBalance := c.PostForm("availBalance")
 
       fmt.Println(role, username, password, availBalance)
-
-      // stmt, _:= db.Prepare("SELECT * FROM customers")
-      // p, err := stmt.Exec()
 
       stmt, err := db.Prepare("INSERT INTO customers (username, password, role, availBalance) VALUES (?, ?, ?, ?)")
       if err != nil {
@@ -66,9 +80,6 @@ func main() {
 
       c.Redirect(http.StatusMovedPermanently, "/")
 
-      // c.HTML(http.StatusOK, "credit.html", gin.H{
-      //   // "badhiya" : "ha sb badhiya"
-      // })
   })
 
   r.POST("/signin", func(c *gin.Context) {
@@ -94,16 +105,28 @@ func main() {
     log.Print(Idq, usernameq, passwordq, password, roleq, availBalanceq)
 
 
-    err := bcrypt.CompareHashAndPassword([]byte(password), []byte(passwordq))
-    if err != nil {
+    err := bcrypt.CompareHashAndPassword([]byte(passwordq), []byte(password))
+
+    if err == nil {
+
       fmt.Println("passwords match")
-      c.Redirect(http.StatusMovedPermanently, "https://www.google.com/")
+
+      c.SetCookie("username", username, 3600, "/", "localhost", false, true)
+      c.SetCookie("isLoggedIn", "true", 3600, "/", "localhost", false, true)
+
+      fmt.Println(c.Cookie("username"))
+      fmt.Println(c.Cookie("isLoggedIn"))
+
+      c.Redirect(http.StatusMovedPermanently, "/credit")
+
     } else {
-      fmt.Println("no matching bosses")
+
+      fmt.Println("passwords don't match")
+
       c.JSON(http.StatusOK, gin.H {
-        "health" : "nice",
+        "Request" : "Wrong password please try again",
       })
-      //c.Redirect(200, "https://www.netflix.com/in/")
+
     }
 
   })
