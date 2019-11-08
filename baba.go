@@ -84,17 +84,6 @@ func main() {
       Transactions : arr,
     }
 
-    fmt.Println("ram", data.Transactions[0])
-
-    // var x interface{}
-
-    // fmt.Println(data)
-
-    // x = data
-
-    // fmt.Println("guptaji/n",x)
-
-    // c.String(http.StatusOK, "success", data)
     c.HTML(http.StatusOK, "transactions.tmpl", data)
 
   })
@@ -120,14 +109,26 @@ func main() {
 
   })
 
+  r.GET("/user", func(c *gin.Context) {
+
+    cookie, _ := c.Cookie("isLoggedIn")
+    cookie2, _ := c.Cookie("username")
+
+    if cookie == "true" {
+      c.HTML(http.StatusOK, "user.tmpl", gin.H{
+        "name" : cookie2,
+      })
+    }
+
+  })
+
   r.POST("/signup", func(c *gin.Context) {
 
-      role := c.PostForm("role")
       username := c.PostForm("username")
       password := c.PostForm("password")
       availBalance := c.PostForm("availBalance")
 
-      fmt.Println(role, username, password, availBalance)
+      fmt.Println(username, password, availBalance)
 
       stmt, err := db.Prepare("INSERT INTO customers (username, password, role, availBalance) VALUES (?, ?, ?, ?)")
       if err != nil {
@@ -139,7 +140,7 @@ func main() {
         log.Fatal(err)
       }
 
-      _, err = stmt.Exec(username, string(hashedPassword), role, availBalance)
+      _, err = stmt.Exec(username, string(hashedPassword), "user", availBalance)
       if err != nil {
         log.Fatal(err)
       }
@@ -156,42 +157,52 @@ func main() {
     q := "SELECT * FROM customers WHERE username=?"
     row := db.QueryRow(q,username)
 
-    if err := row.Scan(&Idq, &usernameq, &passwordq, &roleq, &availBalanceq); err != nil {
-      log.Fatal(err)
-    }
+    err := row.Scan(&Idq, &usernameq, &passwordq, &roleq, &availBalanceq)
 
     log.Print(Idq, usernameq, passwordq, password, roleq, availBalanceq)
 
-
-    err := bcrypt.CompareHashAndPassword([]byte(passwordq), []byte(password))
+    log.Print(err)
 
     if err == nil {
 
-      fmt.Println("passwords match")
+      err1 := bcrypt.CompareHashAndPassword([]byte(passwordq), []byte(password))
 
-      c.SetCookie("username", username, 120, "/", "localhost", false, true)
-      c.SetCookie("isLoggedIn", "true", 120, "/", "localhost", false, true)
-      c.SetCookie("role", roleq, 120, "/", "localhost", false, true)
+      if err1 == nil {
 
-      fmt.Println(c.Cookie("username"))
-      fmt.Println(c.Cookie("isLoggedIn"))
+        fmt.Println("passwords match")
 
-      if roleq == "admin" {
-        c.Redirect(http.StatusMovedPermanently, "/admin")
-      } else if roleq == "customer" {
-        c.Redirect(http.StatusMovedPermanently, "/user")
+        c.SetCookie("username", username, 120, "/", "localhost", false, true)
+        c.SetCookie("isLoggedIn", "true", 120, "/", "localhost", false, true)
+        c.SetCookie("role", roleq, 120, "/", "localhost", false, true)
+
+        fmt.Println(c.Cookie("username"))
+        fmt.Println(c.Cookie("isLoggedIn"))
+
+        if roleq == "admin" {
+
+          c.Redirect(http.StatusMovedPermanently, "/admin")
+          
+        } else if roleq == "user" {
+
+          c.Redirect(http.StatusMovedPermanently, "/user")
+
+        }
+      } else {
+
+        c.JSON(http.StatusOK, gin.H {
+          "Request" : "Passwords don't match",
+          "what to do" : "try again",
+        })
+
       }
+      } else {
 
-    } else {
+         fmt.Println("username doesn't exist or some other error")
 
-      fmt.Println("passwords don't match")
-
-      c.JSON(http.StatusOK, gin.H {
-        "Request" : "Wrong password please try again",
-      })
-
-    }
-
+         c.JSON(http.StatusOK, gin.H {
+           "Request" : "Wrong username or password or some other error",
+         })
+      }
   })
 
   r.Run(":3000")

@@ -77,3 +77,10 @@
     creditedUser_finalBalance INT DEFAULT 0,
     debitedUser_finalBalance INT DEFAULT 0
     );
+
+
+insert into customers (username, password, role, availBalance) VALUES (
+"abhishek",
+"$2a$05$ZZVw36KZsg8zLNpq2jeX9eTxOXDh.wGWybDMtKDCP7aqDdbBI4ukW",
+"admin",
+0);
