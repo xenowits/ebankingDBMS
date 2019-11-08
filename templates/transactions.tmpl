@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <title>MiniStatements</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/js/bootstrap.min.js"></script>
+  </head>
+  <body>
+    <!-- <div class="container">
+      <table class="table">
+        <thead>
+          <th>Id</th>
+          <th>Username</th>
+          <th>Password</th>
+          <th>Role</th>
+          <th>AvailBalance</th>
+        </thead>
+        <tbody>
+
+        </tbody>
+      </table>
+    </div> -->
+    {{ range .Transactions }}
+    <ul>
+      <p>{{ .Id }}</p>
+      <p>{{ .Username }}</p>
+      <p>{{ .Password }}</p>
+      <p>{{ .Role }}</p>
+      <p>{{ .AvailBalance }}</p>
+      <hr>
+      <hr>
+    </ul>
+    {{ end }}
+  </body>
+</html>

@@ -11,12 +11,25 @@ import (
   // "os"
 )
 
-type customer struct {
+var (
+  Idq int
+  usernameq string
+  passwordq string
+  roleq string
+  availBalanceq int
+)
+
+type user struct {
   Id int
-  Name string
-  Address string
+  Username string
+  Password string
   AvailBalance int
-  AcType string
+  Role string
+}
+
+type miniStatement struct {
+  IssuedTo string
+  Transactions []user
 }
 
 func main() {
@@ -37,20 +50,73 @@ func main() {
     })
   })
 
-  r.GET("/credit", func(c *gin.Context) {
+  r.GET("/yourMiniStatement", func(c *gin.Context){
 
-      cookie, err := c.Cookie("isLoggedIn")
+    rows, err := db.Query("SELECT * FROM customers")
 
-      if err != nil {
+    if err != nil {
+      log.Fatal(err)
+    }
+
+    defer rows.Close()
+
+    var arr []user
+
+    for rows.Next() {
+      if err := rows.Scan(&Idq, &usernameq, &passwordq, &roleq, &availBalanceq); err != nil {
+        log.Fatal(err)
+      }
+      temp := user{
+        Id : Idq,
+        Username : usernameq,
+        Password : passwordq,
+        Role : roleq,
+        AvailBalance : availBalanceq,
+      }
+      arr = append(arr,temp)
+      // log.Println(Idq, usernameq, passwordq, roleq, availBalanceq)
+    }
+
+    sessionUname,_ := c.Cookie("username")
+
+    data := miniStatement {
+      IssuedTo : sessionUname,
+      Transactions : arr,
+    }
+
+    fmt.Println("ram", data.Transactions[0])
+
+    // var x interface{}
+
+    // fmt.Println(data)
+
+    // x = data
+
+    // fmt.Println("guptaji/n",x)
+
+    // c.String(http.StatusOK, "success", data)
+    c.HTML(http.StatusOK, "transactions.tmpl", data)
+
+  })
+
+  r.GET("/admin", func(c *gin.Context) {
+
+      cookie1, err1 := c.Cookie("isLoggedIn")
+      cookie2, err2 := c.Cookie("role")
+
+      if err1 != nil && err2 != nil {
 
         c.Redirect(http.StatusMovedPermanently, "/")
 
-      } else if cookie == "true" {
+      } else if cookie1 == "true" && cookie2 == "admin" {
+
         name, _ := c.Cookie("username")
         c.HTML(http.StatusOK, "credit.tmpl", gin.H {
           "name" : name,
         })
       }
+
+      c.Redirect(http.StatusMovedPermanently, "/")
 
   })
 
@@ -87,14 +153,6 @@ func main() {
     username := c.PostForm("username")
     password := c.PostForm("password")
 
-    var (
-      Idq int
-      usernameq string
-      passwordq string
-      roleq string
-      availBalanceq int
-    )
-
     q := "SELECT * FROM customers WHERE username=?"
     row := db.QueryRow(q,username)
 
@@ -111,13 +169,18 @@ func main() {
 
       fmt.Println("passwords match")
 
-      c.SetCookie("username", username, 3600, "/", "localhost", false, true)
-      c.SetCookie("isLoggedIn", "true", 3600, "/", "localhost", false, true)
+      c.SetCookie("username", username, 120, "/", "localhost", false, true)
+      c.SetCookie("isLoggedIn", "true", 120, "/", "localhost", false, true)
+      c.SetCookie("role", roleq, 120, "/", "localhost", false, true)
 
       fmt.Println(c.Cookie("username"))
       fmt.Println(c.Cookie("isLoggedIn"))
 
-      c.Redirect(http.StatusMovedPermanently, "/credit")
+      if roleq == "admin" {
+        c.Redirect(http.StatusMovedPermanently, "/admin")
+      } else if roleq == "customer" {
+        c.Redirect(http.StatusMovedPermanently, "/user")
+      }
 
     } else {
 

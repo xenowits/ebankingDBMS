@@ -67,3 +67,13 @@
       //   // "badhiya" : "ha sb badhiya"
       // })
 //c.Redirect(http.StatusMovedPermanently, "https://www.google.com/")
+
+
+    create table transactions(
+    id INT PRIMARY KEY AUTO_INCREMENT ,
+    t_datetime VARCHAR(255) NOT NULL,
+    user_credited VARCHAR(255) NOT NULL,
+    user_debited VARCHAR(255) NOT NULL,
+    creditedUser_finalBalance INT DEFAULT 0,
+    debitedUser_finalBalance INT DEFAULT 0
+    );
