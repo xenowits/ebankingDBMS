@@ -8,6 +8,8 @@ import (
   "fmt"
   "golang.org/x/crypto/bcrypt"
   "log"
+  "reflect"
+  "time"
   // "os"
 )
 
@@ -122,6 +124,151 @@ func main() {
 
   })
 
+  r.POST("/transact", func(c *gin.Context){
+
+    cookie1, err1 := c.Cookie("isLoggedIn")
+    cookie2, err2 := c.Cookie("username")
+
+    if err1 != nil || err2 != nil {
+
+      c.JSON(http.StatusBadRequest, gin.H{
+        "error" : "sorry the transaction could not be processed",
+      })
+
+    }
+
+    type Trn struct {
+      To string `json:"name" binding:"required"`
+      Amt int64 `json:"amount" binding:"required"`
+    }
+
+    var json Trn
+
+    if err := c.ShouldBindJSON(&json); err != nil {
+
+      c.JSON(http.StatusOK, gin.H{
+        "error" : err.Error(),
+      })
+
+      return
+    }
+
+    fmt.Println(reflect.TypeOf(json.To), json.To, cookie1, cookie2)
+    fmt.Println(reflect.TypeOf(json.Amt), json.Amt)
+
+    // check if destination user exists, if exists , save his availBalance value in a variable
+
+    q := "SELECT username, availBalance, role FROM customers WHERE username=?"
+    row := db.QueryRow(q,json.To)
+
+    err := row.Scan(&usernameq, &availBalanceq, &roleq)
+
+    if err != nil {
+
+      c.JSON(http.StatusBadRequest, gin.H{
+        "error" : "username doesn't exists",
+      })
+
+      return
+    }
+
+
+    if cookie2 == json.To {
+
+      //😨 errors
+
+      c.JSON(http.StatusBadRequest, gin.H{
+        "error" : "whoa there, u want to send yourself this money? We don't this here!!",
+      })
+
+      return
+
+    }
+
+    if roleq == "admin" {
+
+      c.JSON(http.StatusBadRequest, gin.H{
+        "error" : "ohoh!!U can't send money to an admin user",
+      })
+
+      return
+
+    }
+
+    var MyAvailBalance int64 = 0
+
+    q = "SELECT availBalance FROM customers WHERE username=?"
+
+    row = db.QueryRow(q,cookie2)
+
+    err = row.Scan(&MyAvailBalance)
+
+    if MyAvailBalance < json.Amt {
+      //😨 errors
+
+      c.JSON(http.StatusBadRequest, gin.H{
+        "error" : "insufficient funds",
+        "whattodo" : "go to the bank and deposit some money",
+      })
+
+      return
+
+    }
+
+    //real code for transaction
+
+    t := time.Now().String()
+
+    stmt, err := db.Prepare("INSERT INTO transactions (t_datetime, user_credited, user_debited, creditedUser_finalBalance, debitedUser_finalBalance, t_amount) VALUES (?, ?, ?, ?, ?, ?)")
+
+    if err != nil {
+      log.Print(err)
+      return
+    }
+
+    MyNewBalance := MyAvailBalance - json.Amt
+    HisNewBalance := int64(availBalanceq) + json.Amt
+
+    _, err = stmt.Exec(t, usernameq, cookie2, HisNewBalance, MyNewBalance, json.Amt)
+
+    if err != nil {
+
+      log.Print(err)
+      c.JSON(http.StatusBadRequest, gin.H{
+
+        "data" : "Some error occured",
+
+      })
+      return
+
+    }
+
+    //Now update availBalance of debiter
+
+    stmt, _ = db.Prepare("UPDATE customers SET availBalance = ? WHERE username = ? ")
+    _, err1 = stmt.Exec(MyNewBalance, cookie2)
+
+    stmt, _ = db.Prepare("UPDATE customers SET availBalance = ? WHERE username = ? ")
+    _, err2 = stmt.Exec(HisNewBalance, json.To)
+
+    if err1 != nil || err2 != nil {
+
+      c.JSON(http.StatusBadRequest, gin.H{
+        "error" : "unable to proceed with the transaction, try again later",
+      })
+
+      return
+    }
+
+    //😀 done
+    c.JSON(http.StatusOK, gin.H{
+
+      "data" : "congratulations@TRANSACTION was successful",
+
+    })
+
+  })
+
   r.POST("/signup", func(c *gin.Context) {
 
       username := c.PostForm("username")
@@ -132,7 +279,8 @@ func main() {
 
       stmt, err := db.Prepare("INSERT INTO customers (username, password, role, availBalance) VALUES (?, ?, ?, ?)")
       if err != nil {
-        log.Fatal(err)
+        log.Print(err)
+        return
       }
 
       hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), 5)
@@ -171,9 +319,9 @@ func main() {
 
         fmt.Println("passwords match")
 
-        c.SetCookie("username", username, 120, "/", "localhost", false, true)
-        c.SetCookie("isLoggedIn", "true", 120, "/", "localhost", false, true)
-        c.SetCookie("role", roleq, 120, "/", "localhost", false, true)
+        c.SetCookie("username", username, 600, "/", "localhost", false, true)
+        c.SetCookie("isLoggedIn", "true", 600, "/", "localhost", false, true)
+        c.SetCookie("role", roleq, 600, "/", "localhost", false, true)
 
         fmt.Println(c.Cookie("username"))
         fmt.Println(c.Cookie("isLoggedIn"))
@@ -181,7 +329,7 @@ func main() {
         if roleq == "admin" {
 
           c.Redirect(http.StatusMovedPermanently, "/admin")
-          
+
         } else if roleq == "user" {
 
           c.Redirect(http.StatusMovedPermanently, "/user")

@@ -2,7 +2,8 @@
 <html lang="en" dir="ltr">
   <head>
     <meta charset="utf-8">
-    <title></title>
+    <title>User</title>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
   </head>
   <body>
     <h1>
@@ -12,9 +13,35 @@
       Transfer to:
     </p>
     <form>
-      <input type="text" name="name" placeholder="account holder name">
-      <input type="number" name="amout" placeholder="amount">
-      <input type="submit" name="submit">
+      <input type="text" name="name" placeholder="account holder name" id="naam">
+      <input type="number" name="amount" placeholder="amount" id="amt">
+      <button type="button" onclick="myfunc()">Submit</button>
     </form>
+    <script>
+      function myfunc(){
+
+        x = document.getElementById("naam").value
+        y = document.getElementById("amt").value
+
+        console.log(x, y, typeof(x), typeof(y))
+
+        axios.post("/transact", {
+
+          name : x,
+          amount : parseInt(y)
+
+        }).then((response) => {
+
+          alert(response.data.data)
+          console.log(response.data)
+
+        }, (error) => {
+
+          console.log(error.response.data)
+          alert(error.response.data.error)
+
+        })
+      }
+    </script>
   </body>
 </html>
