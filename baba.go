@@ -10,6 +10,7 @@ import (
   "log"
   "reflect"
   "time"
+  // "net/url"
   // "os"
 )
 
@@ -21,17 +22,29 @@ var (
   availBalanceq int
 )
 
-type user struct {
+type tranStruct struct {
   Id int
-  Username string
-  Password string
-  AvailBalance int
-  Role string
+  T_datetime string
+  User_credited string
+  User_debited string
+  CreditedUser_finalBalance int64
+  DebitedUser_finalBalance int64
+  T_amount int64
 }
+
+var (
+  Idt int
+  T_datetimet string
+  User_creditedt string
+  User_debitedt string
+  CreditedUser_finalBalancet int64
+  DebitedUser_finalBalancet int64
+  T_amountt int64
+)
 
 type miniStatement struct {
   IssuedTo string
-  Transactions []user
+  Transactions []tranStruct
 }
 
 func main() {
@@ -47,46 +60,76 @@ func main() {
   // r.LoadHTMLFiles("pages/index.html")
 
   r.GET("/", func(c *gin.Context) {
+
     c.HTML(http.StatusOK, "index.tmpl", gin.H {
       "title" : "Ebanking",
     })
+
   })
 
-  r.GET("/yourMiniStatement", func(c *gin.Context){
+  r.GET("/tStatement", func(c *gin.Context) {
 
-    rows, err := db.Query("SELECT * FROM customers")
+    cookie1, err1 := c.Cookie("isLoggedIn")
+    cookie2, err2 := c.Cookie("role")
+    cookie3, err3 := c.Cookie("username")
+
+    if err1 != nil || err2 != nil || err3 != nil || cookie1 != "true" || cookie2 != "user" {
+      fmt.Println(err1, err2, err3)
+      c.Redirect(307, "/")
+      return
+    }
+
+    fmt.Println(cookie1, cookie2, cookie3)
+
+    stmt, err := db.PrepareContext(c, "SELECT * FROM transactions WHERE user_credited=? OR user_debited=?")
+    if err != nil {
+      c.String(http.StatusBadRequest, "MiniStatement cannot be processed right now!!")
+      return
+    }
+
+    rows, err := stmt.QueryContext(c, cookie3, cookie3)
 
     if err != nil {
-      log.Fatal(err)
+      c.String(http.StatusBadRequest, "Sorry for inconvenience!!")
+      return
     }
-
+    defer stmt.Close()
     defer rows.Close()
 
-    var arr []user
+    var trans []tranStruct
 
     for rows.Next() {
-      if err := rows.Scan(&Idq, &usernameq, &passwordq, &roleq, &availBalanceq); err != nil {
+      if err := rows.Scan(&Idt, &T_datetimet, &User_creditedt, &User_debitedt, &CreditedUser_finalBalancet, &DebitedUser_finalBalancet, &T_amountt); err != nil {
         log.Fatal(err)
       }
-      temp := user{
-        Id : Idq,
-        Username : usernameq,
-        Password : passwordq,
-        Role : roleq,
-        AvailBalance : availBalanceq,
+      temp := tranStruct{
+        Id : Idt,
+        T_datetime : T_datetimet,
+        User_credited : User_creditedt,
+        User_debited : User_debitedt,
+        CreditedUser_finalBalance : CreditedUser_finalBalancet,
+        DebitedUser_finalBalance : DebitedUser_finalBalancet,
+        T_amount : T_amountt,
       }
-      arr = append(arr,temp)
-      // log.Println(Idq, usernameq, passwordq, roleq, availBalanceq)
+      trans = append(trans,temp)
+
     }
-
-    sessionUname,_ := c.Cookie("username")
-
     data := miniStatement {
-      IssuedTo : sessionUname,
-      Transactions : arr,
+      IssuedTo : cookie3,
+      Transactions : trans,
     }
 
     c.HTML(http.StatusOK, "transactions.tmpl", data)
+
+  })
+
+  r.POST("/logout", func(c *gin.Context) {
+
+    c.SetCookie("username", "", -8, "/", "localhost", false, true)
+    c.SetCookie("isLoggedIn", "", -8, "/", "localhost", false, true)
+    c.SetCookie("role", "", -8, "/", "localhost", false, true)
+
+    c.Redirect(302, "/")
 
   })
 
@@ -115,11 +158,15 @@ func main() {
 
     cookie, _ := c.Cookie("isLoggedIn")
     cookie2, _ := c.Cookie("username")
+    cookie3, _ := c.Cookie("role")
 
-    if cookie == "true" {
+    if cookie == "true" && cookie3 == "user" {
       c.HTML(http.StatusOK, "user.tmpl", gin.H{
         "name" : cookie2,
       })
+    } else {
+      fmt.Println("some error occured")
+      c.Redirect(http.StatusMovedPermanently, "/")
     }
 
   })
@@ -225,6 +272,9 @@ func main() {
       log.Print(err)
       return
     }
+    //prepared statements take up server resources and should
+    //be closed after use
+    defer stmt.Close()
 
     MyNewBalance := MyAvailBalance - json.Amt
     HisNewBalance := int64(availBalanceq) + json.Amt
@@ -260,6 +310,8 @@ func main() {
       return
     }
 
+    defer stmt.Close()
+
     //😀 done
     c.JSON(http.StatusOK, gin.H{
 
@@ -282,6 +334,8 @@ func main() {
         log.Print(err)
         return
       }
+
+      defer stmt.Close()
 
       hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), 5)
       if err != nil {
@@ -328,16 +382,16 @@ func main() {
 
         if roleq == "admin" {
 
-          c.Redirect(http.StatusMovedPermanently, "/admin")
+          c.Redirect(302, "/admin")
 
         } else if roleq == "user" {
 
-          c.Redirect(http.StatusMovedPermanently, "/user")
+          c.Redirect(302, "/user")
 
         }
       } else {
 
-        c.JSON(http.StatusOK, gin.H {
+        c.JSON(401, gin.H {
           "Request" : "Passwords don't match",
           "what to do" : "try again",
         })

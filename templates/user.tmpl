@@ -17,13 +17,27 @@
       <input type="number" name="amount" placeholder="amount" id="amt">
       <button type="button" onclick="myfunc()">Submit</button>
     </form>
+    <form action="/logout" method="post">
+      <input type="submit" value="logout">
+    </form>
     <script>
+
       function myfunc(){
 
         x = document.getElementById("naam").value
         y = document.getElementById("amt").value
 
         console.log(x, y, typeof(x), typeof(y))
+
+        if (y < 0) {
+          alert("negative payments not allowed!!")
+          return;
+        }
+
+        if (Number.isInteger(y) == false) {
+          alert("Only integer payments allowed")
+          return
+        }
 
         axios.post("/transact", {
 
@@ -42,6 +56,7 @@
 
         })
       }
+
     </script>
   </body>
 </html>

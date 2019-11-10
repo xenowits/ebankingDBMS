@@ -25,11 +25,13 @@
     </div> -->
     {{ range .Transactions }}
     <ul>
-      <p>{{ .Id }}</p>
-      <p>{{ .Username }}</p>
-      <p>{{ .Password }}</p>
-      <p>{{ .Role }}</p>
-      <p>{{ .AvailBalance }}</p>
+      <p>Transaction id : {{ .Id }}</p>
+      <p>DateTime of transaction : {{ .T_datetime }}</p>
+      <p>User Credited : {{ .User_credited }}</p>
+      <p>User Debited : {{ .User_debited }}</p>
+      <p>Credited User Final Balance : {{ .CreditedUser_finalBalance }}</p>
+      <p>Debited User Final Balance : {{ .DebitedUser_finalBalance }}</p>
+      <p>Transaction Amount : {{ .T_amount }}</p>
       <hr>
       <hr>
     </ul>
