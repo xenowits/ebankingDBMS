@@ -34,7 +34,7 @@
           return;
         }
 
-        if (Number.isInteger(y) == false) {
+        if (parseFloat(y) != parseInt(y)) {
           alert("Only integer payments allowed")
           return
         }
